@@ -83,8 +83,12 @@ class HistoricalStream(openexchangeratesStream):
             A URL, optionally targeted to a specific partition or context.
         """
         if not next_page_token:
-            next_page_token = str(self.config["date"])
-            
+            starting_date = self.get_starting_replication_key_value(context)
+            if not starting_date:
+                next_page_token = str(self.config["start_date"])
+            else:
+                next_page_token = starting_date
+
         url = "".join([self.url_base, self.path, next_page_token or '', ".json"])
         vals = copy.copy(dict(self.config))
         vals.update(context or {})
@@ -93,7 +97,7 @@ class HistoricalStream(openexchangeratesStream):
             if search_text in url:
                 url = url.replace(search_text, self._url_encode(v))
         return url
-    
+
     def get_new_paginator(self) -> BaseAPIPaginator:
         """Get a fresh paginator for this API endpoint.
 
@@ -176,7 +180,7 @@ class HistoricalStream(openexchangeratesStream):
         base = resp["base"]
         parsed_date = date.fromtimestamp(resp["timestamp"])
         row = {}
-        row.update({"date": parsed_date})
+        row.update({"date": parsed_date.isoformat()})
         row.update({"base": base})
 
         for symbol, rate in resp["rates"].items():

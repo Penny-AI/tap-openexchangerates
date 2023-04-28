@@ -22,7 +22,7 @@ class Tapopenexchangerates(Tap):
             description="Your unique App ID",
         ),
         th.Property(
-            "date",
+            "start_date",
             th.DateType,
             required=True,
             description="The requested start date in YYYY-MM-DD format",
