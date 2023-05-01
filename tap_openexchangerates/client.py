@@ -16,7 +16,7 @@ SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
 class openexchangeratesStream(RESTStream):
     """openexchangerates stream class."""
 
-    url_base = "https://openexchangerates.org/api/"
+    url_base = "https://openexchangerates.org/api"
 
     @property
     def authenticator(self) -> APIKeyAuthenticator:
