@@ -3,20 +3,11 @@
 from __future__ import annotations
 
 import responses
-from responses import _recorder
 import pytest
 import re
-import json
-from singer_sdk.testing import get_tap_test_class
 from tap_openexchangerates.tap import Tapopenexchangerates
 from singer_sdk.testing import get_standard_tap_tests
-from singer_sdk.testing.suites import TestSuite
-from .test_config import (
-    StreamConfigurationTest,
-    StreamParseResponseTest,
-    StreamGetUrlTest,
-    TapConfigTest,
-    TapChildStreamTest)
+from .test_config import get_custom_tap_tests
 
 SAMPLE_CONFIG = {
     "start_date": "2023-04-23",
@@ -25,23 +16,6 @@ SAMPLE_CONFIG = {
     "user_agent": "tap-openexchangerates/0.0.1",
     "symbols": ["ZWL"]
 }
-
-tap_stream_test_suite = TestSuite(
-    kind="tap_stream",
-    tests=[
-        StreamConfigurationTest,
-        StreamParseResponseTest,
-        StreamGetUrlTest
-    ]
-)
-
-tap_tap_test_suite = TestSuite(
-    kind='tap',
-    tests=[
-        TapConfigTest,
-        TapChildStreamTest
-    ]
-)
 
 
 @pytest.fixture()
@@ -71,24 +45,16 @@ def test_standard_tap_tests(historical_response: dict):
         test()
 
 
-with responses.RequestsMock() as rsps:
-    rsps.add_passthru(re.compile("https://raw.githubusercontent.com/\\w+"))
-    rsps.add(
+@responses.activate
+def test_custom_tap_tests(historical_response: dict):
+    responses.add_passthru(re.compile("https://raw.githubusercontent.com/\\w+"))
+    responses.add(
         responses.GET,
-        re.compile(".*"),
-        json=json.dumps({"disclaimer": "",
-                "license": "",
-                "timestamp": 1682207982,
-                "base": "USD",
-                "rates": {"ZWL": 322.12}}),
-        status=200
+        re.compile("https://openexchangerates.org/api/historical.*"),
+        json=historical_response,
+        status=200,
     )
 
-    TestTapopenexchangerates = get_tap_test_class(
-        tap_class=Tapopenexchangerates,
-        config=SAMPLE_CONFIG,
-        custom_suites=[tap_stream_test_suite, tap_tap_test_suite],
-        include_tap_tests=False,
-        include_stream_tests=False,
-        include_stream_attribute_tests=False,
-    )
+    tests = get_custom_tap_tests(Tapopenexchangerates, config=SAMPLE_CONFIG)
+    for test in tests:
+        test()
