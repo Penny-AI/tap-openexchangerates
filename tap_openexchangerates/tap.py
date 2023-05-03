@@ -5,7 +5,6 @@ from __future__ import annotations
 from singer_sdk import Tap
 from singer_sdk import typing as th  # JSON schema typing helpers
 
-# TODO: Import your custom stream types here:
 from tap_openexchangerates import streams
 
 
@@ -14,31 +13,37 @@ class Tapopenexchangerates(Tap):
 
     name = "tap-openexchangerates"
 
-    # TODO: Update this section with the actual config values you expect:
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "auth_token",
+            "app_id",
             th.StringType,
             required=True,
             secret=True,  # Flag config as protected.
-            description="The token to authenticate against the API service",
-        ),
-        th.Property(
-            "project_ids",
-            th.ArrayType(th.StringType),
-            required=True,
-            description="Project IDs to replicate",
+            description="Your unique App ID",
         ),
         th.Property(
             "start_date",
-            th.DateTimeType,
-            description="The earliest record date to sync",
+            th.DateType,
+            required=True,
+            description="The requested start date in YYYY-MM-DD format",
         ),
         th.Property(
-            "api_url",
+            "symbols",
+            th.ArrayType(th.StringType),
+            required=False,
+            description="Limit results to specific currencies (comma-separated list of 3-letter codes)",
+        ),
+        th.Property(
+            "base",
             th.StringType,
-            default="https://api.mysample.com",
-            description="The url for the API service",
+            required=False,
+            description="Change base currency (3-letter code, default: USD)",
+        ),
+        th.Property(
+            "user_agent",
+            th.StringType,
+            required=False,
+            description="User agent to use in the request",
         ),
     ).to_dict()
 
@@ -49,8 +54,7 @@ class Tapopenexchangerates(Tap):
             A list of discovered streams.
         """
         return [
-            streams.GroupsStream(self),
-            streams.UsersStream(self),
+            streams.HistoricalStream(self)
         ]
 
 

@@ -16,14 +16,14 @@ plugins:
     - about
     - stream-maps
     config:
-      start_date: '2010-01-01T00:00:00Z'
+      start_date: '2023-04-26'
     settings:
     # TODO: To configure using Meltano, declare settings and their types here:
     - name: username
     - name: password
       kind: password
     - name: start_date
-      value: '2010-01-01T00:00:00Z'
+      value: '2023-01-01'
   loaders:
   - name: target-jsonl
     variant: andyh1203

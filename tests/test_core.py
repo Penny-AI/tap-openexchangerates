@@ -1,23 +1,60 @@
 """Tests standard tap features using the built-in SDK tests library."""
 
-import datetime
+from __future__ import annotations
 
-from singer_sdk.testing import get_tap_test_class
-
+import responses
+import pytest
+import re
 from tap_openexchangerates.tap import Tapopenexchangerates
-
+from singer_sdk.testing import get_standard_tap_tests
+from .test_config import get_custom_tap_tests
 
 SAMPLE_CONFIG = {
-    "start_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-    # TODO: Initialize minimal tap config
+    "start_date": "2023-04-23",
+    "app_id": "1234567890",
+    "base": "USD",
+    "user_agent": "tap-openexchangerates/0.0.1",
+    "symbols": ["ZWL"]
 }
 
 
-# Run standard built-in tap tests from the SDK:
-TestTapopenexchangerates = get_tap_test_class(
-    tap_class=Tapopenexchangerates,
-    config=SAMPLE_CONFIG
-)
+@pytest.fixture()
+def historical_response():
+    """Return a sample response for the historical stream."""
+    return {"disclaimer": "",
+            "license": "",
+            "timestamp": 1682207982,
+            "base": "USD",
+            "rates": {"ZWL": 322.12}}
 
 
-# TODO: Create additional tests as appropriate for your tap.
+@responses.activate
+def test_standard_tap_tests(historical_response: dict):
+    """Run standard tap tests from the SDK."""
+    responses.add_passthru(re.compile("https://raw.githubusercontent.com/\\w+"))
+
+    responses.add(
+        responses.GET,
+        re.compile("https://openexchangerates.org/api/historical.*"),
+        json=historical_response,
+        status=200,
+    )
+
+    tests = get_standard_tap_tests(Tapopenexchangerates, config=SAMPLE_CONFIG)
+    for test in tests:
+        test()
+
+
+@responses.activate
+def test_custom_tap_tests(historical_response: dict):
+    responses.add_passthru(re.compile("https://raw.githubusercontent.com/\\w+"))
+    responses.add(
+        responses.GET,
+        re.compile("https://openexchangerates.org/api/historical.*"),
+        json=historical_response,
+        status=200,
+    )
+
+    tests = get_custom_tap_tests(Tapopenexchangerates, config=SAMPLE_CONFIG)
+    for test in tests:
+        test()
